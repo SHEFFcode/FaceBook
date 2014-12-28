@@ -47,9 +47,19 @@ bool HelloWorld::init()
     
 	closeItem->setPosition(Vec2(origin.x + visibleSize.width - closeItem->getContentSize().width/2 ,
                                 origin.y + closeItem->getContentSize().height/2));
+    
+    auto closeItem2 = MenuItemImage::create(
+                                           "CloseNormal.png",
+                                           "CloseSelected.png",
+                                           CC_CALLBACK_1(HelloWorld::capture, this));
+    closeItem2->setScale(4);
+    
+    closeItem2->setPosition(Vec2(origin.x + visibleSize.width - closeItem->getContentSize().width/2 - 300 ,
+                                origin.y + closeItem->getContentSize().height/2));
+
 
     // create menu, it's an autorelease object
-    auto menu = Menu::create(closeItem, NULL);
+    auto menu = Menu::create(closeItem, closeItem2, NULL);
     menu->setPosition(Vec2::ZERO);
     this->addChild(menu, 1);
 
@@ -80,6 +90,56 @@ bool HelloWorld::init()
     return true;
 }
 
+void HelloWorld::afterCaptured(bool succeed, const std::string& outputFile)
+{
+    if (succeed)
+    {
+        // show screenshot
+        auto sp = Sprite::create(outputFile);
+        addChild(sp, 0, "screenshot");
+        Size s = Director::getInstance()->getWinSize();
+        sp->setPosition(s.width / 2, s.height / 2);
+        sp->setScale(0.25);
+    }
+    else
+    {
+        log("Capture screen failed.");
+    }
+}
+
+void HelloWorld::capture(Ref* pSender)
+{
+    utils::captureScreen(CC_CALLBACK_2(HelloWorld::afterCaptured, this),"CaptureScreenTest.png");
+    SHEFFpath = FileUtils::getInstance()->getWritablePath();
+    SHEFFpath += "CaptureScreenTest.png";
+    CCLOG("save image to %s", SHEFFpath.c_str());
+}
+
+std::string HelloWorld::sceenshot(std::string& filename)
+{
+    Size visibleSize = Director::getInstance()->getVisibleSize();
+    Point origin = Director::getInstance()->getVisibleOrigin();
+    auto tex = RenderTexture::create(visibleSize.width, visibleSize.height, Texture2D::PixelFormat::RGBA8888);
+    tex->setPosition((origin.x + visibleSize.width) / 2, (origin.y + visibleSize.height) / 2);
+    tex->begin();
+    Director::getInstance()->getRunningScene()->visit();
+    tex->end();
+    
+    std::string imgPath = FileUtils::getInstance()->getWritablePath();
+    if (imgPath.length() == 0) {
+        return "";
+    }
+    
+    bool ret = tex->saveToFile(filename, Image::Format::PNG);
+    if (ret) {
+        imgPath += filename;
+        CCLOG("save image to %s", imgPath.c_str());
+        return imgPath;
+    }
+    return "";
+}
+
+
 
 void HelloWorld::menuCloseCallback(Ref* pSender)
 {
@@ -90,18 +150,56 @@ void HelloWorld::menuCloseCallback(Ref* pSender)
 
     
 #if (CC_TARGET_PLATFORM == CC_PLATFORM_IOS)
-    cocos2d::plugin::FacebookAgent::FBInfo params;
-    params.insert(std::make_pair("dialog", "message_link"));
-    params.insert(std::make_pair("description", "Cocos2d-x is a great game engine"));
-    params.insert(std::make_pair("title", "Cocos2d-x"));
-    params.insert(std::make_pair("link", "http://www.cocos2d-x.org"));
-    params.insert(std::make_pair("imageUrl", "http://files.cocos2d-x.org/images/orgsite/logo.png"));
     
-    if (cocos2d::plugin::FacebookAgent::getInstance()->canPresentDialogWithParams(params))
-    {
-        cocos2d::plugin::FacebookAgent::getInstance()->dialog(params, [=](int ret, std::string& msg){
-            CCLOG("%s", msg.c_str());
-        });
-    }
+    std::string fileName = "CaptureScreenTest.png";
+    
+    std::string imgPath = sceenshot(fileName);
+    
+    auto delay = DelayTime::create(1.0);
+    auto share = CallFunc::create([=](){
+        cocos2d::plugin::FacebookAgent::FBInfo params;
+        params.insert(std::make_pair("dialog", "sharePhoto"));
+        params.insert(std::make_pair("photo", imgPath));
+        
+        if (cocos2d::plugin::FacebookAgent::getInstance()->canPresentDialogWithParams(params))
+        {
+            cocos2d::plugin::FacebookAgent::getInstance()->dialog(params, [=](int ret, std::string& msg){
+                CCLOG("%s", msg.c_str());
+            });
+        }
+        else
+        {
+            cocos2d::plugin::FacebookAgent::getInstance()->dialog(params, [=](int ret, std::string& msg){
+                CCLOG("%s", msg.c_str());
+            });
+
+        }
+    });
+    
+    auto seq = Sequence::create(delay, share, nullptr);
+    runAction(seq);
+
+    
+   #pragma Link Share
+//    cocos2d::plugin::FacebookAgent::FBInfo params;
+//    params.insert(std::make_pair("dialog", "share_link"));
+//    params.insert(std::make_pair("name", "Facebook sharing implemented"));
+//    params.insert(std::make_pair("caption", "If this appears, facebook support is implemented."));
+//    params.insert(std::make_pair("description", "If this appears, facebook support is implemented."));
+//    params.insert(std::make_pair("link", "http://www.yuriyshefer.com"));
+//    
+//    if (cocos2d::plugin::FacebookAgent::getInstance()->canPresentDialogWithParams(params))
+//    {
+//        cocos2d::plugin::FacebookAgent::getInstance()->dialog(params, [=](int ret ,std::string& msg){
+//            CCLOG("%s", msg.c_str());
+//        });
+//    }
+//    else
+//    {
+//        cocos2d::plugin::FacebookAgent::getInstance()->share(params, [=](int ret ,std::string& msg)
+//                                            {
+//                                                CCLOG("%s", msg.c_str());
+//                                            });
+//    }
 #endif
 }

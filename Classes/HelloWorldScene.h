@@ -15,6 +15,16 @@ public:
     // a selector callback
     void menuCloseCallback(cocos2d::Ref* pSender);
     
+    void capture(cocos2d::Ref* pSender);
+    
+    void afterCaptured(bool succeed, const std::string& outputFile);
+    
+    std::string sceenshot(std::string& filename);
+    
+    std::string SHEFFpath;
+    
+    std::string imgPath2(std::string);
+    
     // implement the "static create()" method manually
     CREATE_FUNC(HelloWorld);
 };

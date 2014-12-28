@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">FaceBook</string>
+    <string name="app_id">601768766616826</string>
 </resources>
